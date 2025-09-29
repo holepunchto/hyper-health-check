@@ -7,9 +7,10 @@ const Hyperswarm = require("hyperswarm");
 const Corestore = require("corestore");
 const IdEnc = require("hypercore-id-encoding");
 const promClient = require("prom-client");
-const Hyperdrive = require("hyperdrive");
 const goodbye = require("graceful-goodbye");
+const PromClient = require("dht-prom-client");
 const { command, flag } = require("paparam");
+const Instrumentation = require("hyper-instrument");
 
 const Server = require("./lib/server");
 const HyperHealthCheck = require(".");
@@ -29,6 +30,18 @@ const runCmd = command(
   flag(
     "--port|-p [port]",
     "HTTP Port to try to bind to (defaults to a random port)",
+  ),
+  flag(
+    "--scraper-public-key [scraper-public-key]",
+    "Public key of a dht-prometheus scraper.  Can be hex or z32.",
+  ),
+  flag(
+    "--scraper-secret [scraper-secret]",
+    "Secret of the dht-prometheus scraper.  Can be hex or z32.",
+  ),
+  flag(
+    "--scraper-alias [scraper-alias]",
+    "(optional) Alias with which to register to the scraper",
   ),
   async function ({ flags }) {
     const logger = pino({ name: "hyper-health-check" });
@@ -62,12 +75,44 @@ const runCmd = command(
     });
 
     const healthChecker = new HyperHealthCheck(driveKeys, store, swarm);
+
+    let server = null;
+    if (port !== null) {
+      server = new Server(host, port, drives, promClient);
+    }
+
+    let instrumentation = null;
+    if (flags.scraperPublicKey) {
+      logger.info("Setting up instrumentation");
+
+      const scraperPublicKey = IdEnc.decode(flags.scraperPublicKey);
+      const scraperSecret = IdEnc.decode(flags.scraperSecret);
+
+      let prometheusAlias = flags.scraperAlias;
+      if (prometheusAlias && prometheusAlias.length > 99)
+        throw new Error("The Prometheus alias must have length less than 100");
+      if (!prometheusAlias) {
+        prometheusAlias = `hyper-health-check-${os.hostname()}`.slice(0, 99);
+      }
+
+      instrumentation = new Instrumentation({
+        swarm,
+        corestore: store,
+        scraperPublicKey,
+        prometheusAlias,
+        scraperSecret,
+        prometheusServiceName: "hyper-health-check",
+      });
+
+      instrumentation.registerLogger(logger);
+    }
+
     healthChecker.registerMetrics(promClient);
 
-    const server = new Server(host, port, drives, promClient);
     goodbye(async () => {
       logger.info("Shutting down...");
-      if (server.opened) await server.close();
+      if (instrumentation) await instrumentation.close()
+      if (server?.opened) await server.close();
       await swarm.destroy();
       await store.close();
     });
@@ -76,6 +121,7 @@ const runCmd = command(
       logger.error(`Unexpected request error: ${e.stack}`);
     });
 
+    await instrumentation.ready();
     await healthChecker.ready();
     await server.ready();
 
