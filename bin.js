@@ -111,7 +111,7 @@ const runCmd = command(
 
     goodbye(async () => {
       logger.info("Shutting down...");
-      if (instrumentation) await instrumentation.close()
+      if (instrumentation) await instrumentation.close();
       if (server?.opened) await server.close();
       await swarm.destroy();
       await store.close();
