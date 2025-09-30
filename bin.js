@@ -8,7 +8,6 @@ const Corestore = require("corestore");
 const IdEnc = require("hypercore-id-encoding");
 const promClient = require("prom-client");
 const goodbye = require("graceful-goodbye");
-const PromClient = require("dht-prom-client");
 const { command, flag } = require("paparam");
 const Instrumentation = require("hyper-instrument");
 
