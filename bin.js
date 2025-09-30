@@ -126,7 +126,9 @@ const runCmd = command(
 
     if (server) {
       const address = server.server.address();
-      logger.info(`HTTP server listening at ${address.address}:${address.port}`);
+      logger.info(
+        `HTTP server listening at ${address.address}:${address.port}`,
+      );
     }
   },
 );
