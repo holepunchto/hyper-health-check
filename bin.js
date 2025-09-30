@@ -54,7 +54,7 @@ const runCmd = command(
     }
 
     const host = "127.0.0.1";
-    const port = flags.port ? parseInt(flags.port) : 0;
+    const port = flags.port ? parseInt(flags.port) : null;
 
     const store = new Corestore(DEFAULT_CORESTORE_LOC);
     const swarm = new Hyperswarm();
@@ -79,6 +79,9 @@ const runCmd = command(
     let server = null;
     if (port !== null) {
       server = new Server(host, port, drives, promClient);
+      server.on("request-error", (e) => {
+        logger.error(`Unexpected request error: ${e.stack}`);
+      });
     }
 
     let instrumentation = null;
@@ -117,16 +120,14 @@ const runCmd = command(
       await store.close();
     });
 
-    server.on("request-error", (e) => {
-      logger.error(`Unexpected request error: ${e.stack}`);
-    });
-
     await instrumentation.ready();
     await healthChecker.ready();
-    await server.ready();
+    if (server) await server.ready();
 
-    const address = server.server.address();
-    logger.info(`HTTP server listening at ${address.address}:${address.port}`);
+    if (server) {
+      const address = server.server.address();
+      logger.info(`HTTP server listening at ${address.address}:${address.port}`);
+    }
   },
 );
 
