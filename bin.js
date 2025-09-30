@@ -54,7 +54,7 @@ const runCmd = command(
     }
 
     const host = "127.0.0.1";
-    const port = flags.port ? parseInt(flags.port) : null;
+    const port = flags.port !== undefined ? parseInt(flags.port) : null;
 
     const store = new Corestore(DEFAULT_CORESTORE_LOC);
     const swarm = new Hyperswarm();
@@ -78,6 +78,7 @@ const runCmd = command(
 
     let server = null;
     if (port !== null) {
+      logger.info("Setting up HTTP server");
       server = new Server(host, port, drives, promClient);
       server.on("request-error", (e) => {
         logger.error(`Unexpected request error: ${e.stack}`);
