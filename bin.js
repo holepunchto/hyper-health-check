@@ -28,6 +28,11 @@ const runCmd = command(
     "Key of a Hyperdrive to monitor. Optionally include a name after the key, separated by a colon (:). Can be more than 1.",
   ).multiple(),
   flag(
+    "--core|-c [corekey]",
+    "Key of a Hypercore to monitor. Optionally include a name after the key, separated by a colon (:). Can be more than 1.",
+  ).multiple(),
+
+  flag(
     "--port|-p [port]",
     "HTTP Port to try to bind to (defaults to a random port)",
   ),
@@ -53,7 +58,7 @@ const runCmd = command(
     const logIntervalMs = (flags.logInterval || DEFAULT_LOG_INTERVAL) * 1000;
 
     const driveKeys = new Map();
-    for (const entry of flags.drive) {
+    for (const entry of flags.drive || []) {
       const nameStart = entry.indexOf(":");
       const [k, name] =
         nameStart > 0
@@ -62,6 +67,18 @@ const runCmd = command(
       const key = IdEnc.normalize(k);
       logger.info(`Watching drive ${key} (${name ? name : "no name"})`);
       driveKeys.set(key, { name });
+    }
+
+    const coreKeys = new Map();
+    for (const entry of flags.core || []) {
+      const nameStart = entry.indexOf(":");
+      const [k, name] =
+        nameStart > 0
+          ? [entry.slice(0, nameStart), entry.slice(nameStart + 1)]
+          : [entry, null];
+      const key = IdEnc.normalize(k);
+      logger.info(`Watching core ${key} (${name ? name : "no name"})`);
+      coreKeys.set(key, { name });
     }
 
     const host = "127.0.0.1";
@@ -85,7 +102,7 @@ const runCmd = command(
       );
     });
 
-    const healthChecker = new HyperHealthCheck(driveKeys, store, swarm);
+    const healthChecker = new HyperHealthCheck(driveKeys, coreKeys, store, swarm);
 
     let server = null;
     if (port !== null) {

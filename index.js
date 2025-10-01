@@ -3,10 +3,11 @@ const Hyperdrive = require("hyperdrive");
 const IdEnc = require("hypercore-id-encoding");
 
 class HyperHealthCheck extends ReadyResource {
-  constructor(driveKeys, store, swarm) {
+  constructor(driveKeys, coreKeys, store, swarm) {
     super();
 
     this.drives = new Map();
+    this.cores = new Map()
     this.store = store;
     this.swarm = swarm;
 
@@ -17,6 +18,14 @@ class HyperHealthCheck extends ReadyResource {
         : IdEnc.normalize(k);
       this.drives.set(labelName, drive);
     }
+
+    for (const [k, { name }] of coreKeys) {
+      const core = this.store.get({ key: IdEnc.decode(k) });
+      const labelName = name
+        ? `${name}:${IdEnc.normalize(k)}`
+        : IdEnc.normalize(k);
+      this.cores.set(labelName, core);
+    }
   }
 
   async _open() {
@@ -24,50 +33,60 @@ class HyperHealthCheck extends ReadyResource {
       await drive.ready();
       this.swarm.join(drive.discoveryKey, { server: false, client: true });
     }
+    for (const core of this.cores.values()) {
+      await core.ready();
+      this.swarm.join(core.discoveryKey, { server: false, client: true });
+    }
   }
 
   async _close() {}
 
-  getPeersOverview() {
+  _processMetric (extractValue) {
     const res = new Map();
     for (const [key, drive] of this.drives) {
-      res.set(key, drive.db.core.peers.length);
+      res.set(key, extractValue(drive.blobs.core));
     }
+    for (const [key, core] of this.cores) {
+      res.set(key, extractValue(core));
+    }
+    return res
+  }
 
-    return res;
+  getPeersOverview() {
+    const extract = (core) => {
+      return core.peers.length
+    }
+    return this._processMetric(extract)
   }
 
   getPeersWithAllDataOverview() {
-    const res = new Map();
-    for (const [key, drive] of this.drives) {
-      const blobsLength = drive.blobs.core.length;
+    const extract = (core) => {
+      const length = core.length;
       let nr = 0;
-      for (const peer of drive.blobs.core.peers) {
-        // We only check the blobs core, assuming that if the blobs core is fully downloaded, the db core will always be too
-        if (peer.remoteContiguousLength >= blobsLength) nr++;
+      for (const peer of core.peers) {
+        if (peer.remoteContiguousLength >= length) nr++;
       }
-      res.set(key, nr);
+      return nr
     }
 
-    return res;
+    return this._processMetric(extract)
   }
 
   getUniqueIpsWithAllDataOverview() {
-    const res = new Map();
-    for (const [key, drive] of this.drives) {
-      const blobsLength = drive.blobs.core.length;
+    const extract = (core) => {
+      const length = core.length;
       const ips = new Set();
-      for (const peer of drive.blobs.core.peers) {
-        // We only check the blobs core, assuming that if the blobs core is fully downloaded, the db core will always be too
-        if (peer.remoteContiguousLength >= blobsLength) {
+      for (const peer of core.peers) {
+        if (peer.remoteContiguousLength >= length) {
           const ip = peer.stream.rawStream?.remoteHost;
           if (ip) ips.add(peer.stream.rawStream.remoteHost);
         }
       }
-      res.set(key, ips);
+
+      return ips
     }
 
-    return res;
+    return this._processMetric(extract)
   }
 
   registerMetrics(promClient) {
