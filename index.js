@@ -10,9 +10,12 @@ class HyperHealthCheck extends ReadyResource {
     this.store = store;
     this.swarm = swarm;
 
-    for (const k of driveKeys) {
+    for (const [k, { name }] of driveKeys) {
       const drive = new Hyperdrive(this.store.session(), IdEnc.decode(k));
-      this.drives.set(k, drive);
+      const labelName = name
+        ? `${name}:${IdEnc.normalize(k)}`
+        : IdEnc.normalize(k);
+      this.drives.set(labelName, drive);
     }
   }
 
