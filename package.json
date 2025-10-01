@@ -1,6 +1,6 @@
 {
   "name": "hyper-health-check",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Health checks for hypercores, including prometheus support",
   "main": "index.js",
   "bin": {
