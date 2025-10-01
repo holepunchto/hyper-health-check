@@ -60,7 +60,7 @@ const runCmd = command(
           ? [entry.slice(0, nameStart), entry.slice(nameStart + 1)]
           : [entry, null];
       const key = IdEnc.normalize(k);
-      logger.info(`Watching drive ${key} (${name ? name : ""})`);
+      logger.info(`Watching drive ${key} (${name ? name : "no name"})`);
       driveKeys.set(key, { name });
     }
 
