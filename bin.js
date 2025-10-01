@@ -19,6 +19,7 @@ const DEFAULT_CORESTORE_LOC = path.join(
   path.resolve(os.tmpdir()),
   "hyper-health-check",
 );
+const DEFAULT_LOG_INTERVAL = 60 * 60;
 
 const runCmd = command(
   "run",
@@ -42,8 +43,14 @@ const runCmd = command(
     "--scraper-alias [scraper-alias]",
     "(optional) Alias with which to register to the scraper",
   ),
+  flag(
+    "--log-interval [logInterval]",
+    `Interval (in seconds) at which to log the info. Default ${DEFAULT_LOG_INTERVAL}`,
+  ),
+
   async function ({ flags }) {
     const logger = pino({ name: "hyper-health-check" });
+    const logIntervalMs = (flags.logInterval || DEFAULT_LOG_INTERVAL) * 1000;
 
     const driveKeys = [];
     for (const k of flags.drive) {
@@ -120,7 +127,7 @@ const runCmd = command(
       await store.close();
     });
 
-    await instrumentation.ready();
+    if (instrumentation) await instrumentation.ready();
     await healthChecker.ready();
     if (server) await server.ready();
 
@@ -130,6 +137,18 @@ const runCmd = command(
         `HTTP server listening at ${address.address}:${address.port}`,
       );
     }
+
+    setInterval(() => {
+      const allDataPeers = healthChecker.getPeersWithAllDataOverview();
+      const peers = healthChecker.getPeersOverview();
+      const ipOverview = healthChecker.getUniqueIpsWithAllDataOverview();
+      for (const key of allDataPeers.keys()) {
+        const ips = [...ipOverview.get(key)].sort();
+        logger.info(
+          `${key} has ${peers.get(key)} peers, ${allDataPeers.get(key)} who fully downloaded it across ${ips.length} ip's: ${ips.join(", ")}`,
+        );
+      }
+    }, logIntervalMs);
   },
 );
 
