@@ -25,7 +25,7 @@ const runCmd = command(
   "run",
   flag(
     "--drive|-d [drivekey]",
-    "Key of a Hyperdrive to monitor. Can be more than 1.",
+    "Key of a Hyperdrive to monitor. Optionally include a name after the key, separated by a colon (:). Can be more than 1.",
   ).multiple(),
   flag(
     "--port|-p [port]",
@@ -52,11 +52,16 @@ const runCmd = command(
     const logger = pino({ name: "hyper-health-check" });
     const logIntervalMs = (flags.logInterval || DEFAULT_LOG_INTERVAL) * 1000;
 
-    const driveKeys = [];
-    for (const k of flags.drive) {
+    const driveKeys = new Map();
+    for (const entry of flags.drive) {
+      const nameStart = entry.indexOf(":");
+      const [k, name] =
+        nameStart > 0
+          ? [entry.slice(0, nameStart), entry.slice(nameStart + 1)]
+          : [entry, null];
       const key = IdEnc.normalize(k);
-      logger.info(`Watching drive ${key}`);
-      driveKeys.push(key);
+      logger.info(`Watching drive ${key} (${name ? name : ""})`);
+      driveKeys.set(key, { name });
     }
 
     const host = "127.0.0.1";
