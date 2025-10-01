@@ -102,7 +102,12 @@ const runCmd = command(
       );
     });
 
-    const healthChecker = new HyperHealthCheck(driveKeys, coreKeys, store, swarm);
+    const healthChecker = new HyperHealthCheck(
+      driveKeys,
+      coreKeys,
+      store,
+      swarm,
+    );
 
     let server = null;
     if (port !== null) {

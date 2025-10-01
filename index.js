@@ -7,7 +7,7 @@ class HyperHealthCheck extends ReadyResource {
     super();
 
     this.drives = new Map();
-    this.cores = new Map()
+    this.cores = new Map();
     this.store = store;
     this.swarm = swarm;
 
@@ -41,7 +41,7 @@ class HyperHealthCheck extends ReadyResource {
 
   async _close() {}
 
-  _processMetric (extractValue) {
+  _processMetric(extractValue) {
     const res = new Map();
     for (const [key, drive] of this.drives) {
       res.set(key, extractValue(drive.blobs.core));
@@ -49,14 +49,14 @@ class HyperHealthCheck extends ReadyResource {
     for (const [key, core] of this.cores) {
       res.set(key, extractValue(core));
     }
-    return res
+    return res;
   }
 
   getPeersOverview() {
     const extract = (core) => {
-      return core.peers.length
-    }
-    return this._processMetric(extract)
+      return core.peers.length;
+    };
+    return this._processMetric(extract);
   }
 
   getPeersWithAllDataOverview() {
@@ -66,10 +66,10 @@ class HyperHealthCheck extends ReadyResource {
       for (const peer of core.peers) {
         if (peer.remoteContiguousLength >= length) nr++;
       }
-      return nr
-    }
+      return nr;
+    };
 
-    return this._processMetric(extract)
+    return this._processMetric(extract);
   }
 
   getUniqueIpsWithAllDataOverview() {
@@ -83,10 +83,10 @@ class HyperHealthCheck extends ReadyResource {
         }
       }
 
-      return ips
-    }
+      return ips;
+    };
 
-    return this._processMetric(extract)
+    return this._processMetric(extract);
   }
 
   registerMetrics(promClient) {
