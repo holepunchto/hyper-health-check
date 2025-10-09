@@ -70,7 +70,7 @@ class HyperHealthCheck extends ReadyResource {
     last.unshift({ length: core.length, at: now })
 
     const index = last.findIndex((item) => now - item.at > +this.gracePeriod)
-    last.splice(index)
+    if (index !== -1) last.splice(index)
   }
 
   _getLength(core, last) {
