@@ -56,7 +56,7 @@ const runCmd = command(
   ),
   flag(
     '--grace-period [gracePeriod]',
-    `Time (in ms) after which a peer is considered unhealthy if we have not heard from them. Default ${DEFAULT_GRACE_PERIOD}`
+    `Time (in ms) a remote peer has to sync with a core after it updated before being considered unhealthy. Default ${DEFAULT_GRACE_PERIOD}`
   ),
   flag(
     '--update-interval [updateInterval]',
