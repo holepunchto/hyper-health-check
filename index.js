@@ -11,14 +11,15 @@ class HyperHealthCheck extends ReadyResource {
     this.store = store
     this.swarm = swarm
     this.gracePeriod = opts.gracePeriod || 0
-    this.updateInterval = opts.updateInterval || 60 * 1000
+    this.updateIntervalPeriod = opts.updateIntervalPeriod || 60 * 1000
+    this.updateInterval = null
 
     for (const [k, { name }] of driveKeys) {
       const drive = new Hyperdrive(this.store.session(), IdEnc.decode(k))
       const labelName = name
         ? `${name}:${IdEnc.normalize(k)}`
         : IdEnc.normalize(k)
-      this.drives.set(labelName, { drive, last: [], interval: null })
+      this.drives.set(labelName, { drive, last: [] })
     }
 
     for (const [k, { name }] of coreKeys) {
@@ -26,36 +27,31 @@ class HyperHealthCheck extends ReadyResource {
       const labelName = name
         ? `${name}:${IdEnc.normalize(k)}`
         : IdEnc.normalize(k)
-      this.cores.set(labelName, { core, last: [], interval: null })
+      this.cores.set(labelName, { core, last: [] })
     }
   }
 
   async _open() {
-    for (const value of this.drives.values()) {
-      const { drive, last } = value
+    for (const { drive } of this.drives.values()) {
       await drive.ready()
       this.swarm.join(drive.discoveryKey, { server: false, client: true })
-      value.interval = setInterval(() => {
-        this._updateLength(drive.blobs.core, last)
-      }, this.updateInterval)
     }
-    for (const value of this.cores.values()) {
-      const { core, last } = value
+    for (const { core } of this.cores.values()) {
       await core.ready()
       this.swarm.join(core.discoveryKey, { server: false, client: true })
-      value.interval = setInterval(() => {
-        this._updateLength(core, last)
-      }, this.updateInterval)
     }
+    this.updateInterval = setInterval(() => {
+      for (const { drive, last } of this.drives.values()) {
+        this._updateLength(drive.blobs.core, last)
+      }
+      for (const { core, last } of this.cores.values()) {
+        this._updateLength(core, last)
+      }
+    }, this.updateIntervalPeriod)
   }
 
   async _close() {
-    for (const value of this.drives.values()) {
-      clearInterval(value.interval)
-    }
-    for (const value of this.cores.values()) {
-      clearInterval(value.interval)
-    }
+    clearInterval(this.updateInterval)
   }
 
   _processMetric(extractValue) {
