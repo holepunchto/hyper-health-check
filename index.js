@@ -73,7 +73,7 @@ class HyperHealthCheck extends ReadyResource {
     const now = Date.now()
     last.unshift({ length: core.length, at: now })
 
-    const index = last.findIndex((item) => now - item.at >= +this.gracePeriod)
+    const index = last.findIndex((item) => now - item.at > +this.gracePeriod)
     last.splice(index)
   }
 
@@ -81,9 +81,10 @@ class HyperHealthCheck extends ReadyResource {
     let length = core.length
     if (this.gracePeriod) {
       const now = Date.now()
-      const index =
-        last.findIndex((item) => now - item.at >= +this.gracePeriod) - 1
-      length = index >= 0 ? last[index].length : last[last.length - 1].length
+      const lastLength = last.findLast(
+        (item) => now - item.at <= +this.gracePeriod
+      )?.length
+      if (lastLength) length = lastLength
     }
     return length
   }
