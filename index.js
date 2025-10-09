@@ -36,7 +36,7 @@ class HyperHealthCheck extends ReadyResource {
       await drive.ready()
       this.swarm.join(drive.discoveryKey, { server: false, client: true })
       value.interval = setInterval(() => {
-        last.unshift({ length: drive.blobs.core.length, at: Date.now() })
+        this._updateLength(drive.blobs.core, last)
       }, this.updateInterval)
     }
     for (const value of this.cores.values()) {
@@ -44,7 +44,7 @@ class HyperHealthCheck extends ReadyResource {
       await core.ready()
       this.swarm.join(core.discoveryKey, { server: false, client: true })
       value.interval = setInterval(() => {
-        last.unshift({ length: core.length, at: Date.now() })
+        this._updateLength(core, last)
       }, this.updateInterval)
     }
   }
@@ -69,6 +69,14 @@ class HyperHealthCheck extends ReadyResource {
     return res
   }
 
+  _updateLength(core, last) {
+    const now = Date.now()
+    last.unshift({ length: core.length, at: now })
+
+    const index = last.findIndex((item) => now - item.at >= +this.gracePeriod)
+    last.splice(index)
+  }
+
   _getLength(core, last) {
     let length = core.length
     if (this.gracePeriod) {
@@ -77,7 +85,6 @@ class HyperHealthCheck extends ReadyResource {
         last.findIndex((item) => now - item.at >= +this.gracePeriod) - 1
       if (index >= 0) {
         length = last[index].length
-        last.splice(index + 1) // remove from index + 1 to end
       } else {
         length = last[last.length - 1]
       }
