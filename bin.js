@@ -52,6 +52,10 @@ const runCmd = command(
     '--log-interval [logInterval]',
     `Interval (in seconds) at which to log the info. Default ${DEFAULT_LOG_INTERVAL}`
   ),
+  flag(
+    '--grace-period [gracePeriod]',
+    'Time (in ms) after which a peer is considered unhealthy if we have not heard from them. Default 0 (disabled)'
+  ),
 
   async function ({ flags }) {
     const logger = pino({ name: 'hyper-health-check' })
@@ -106,7 +110,10 @@ const runCmd = command(
       driveKeys,
       coreKeys,
       store,
-      swarm
+      swarm,
+      {
+        gracePeriod: flags.gracePeriod
+      }
     )
 
     let server = null
