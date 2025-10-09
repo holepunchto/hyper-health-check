@@ -11,13 +11,14 @@ class HyperHealthCheck extends ReadyResource {
     this.store = store
     this.swarm = swarm
     this.gracePeriod = opts.gracePeriod || 0
+    this.updateInterval = opts.updateInterval || 60 * 1000
 
     for (const [k, { name }] of driveKeys) {
       const drive = new Hyperdrive(this.store.session(), IdEnc.decode(k))
       const labelName = name
         ? `${name}:${IdEnc.normalize(k)}`
         : IdEnc.normalize(k)
-      this.drives.set(labelName, { drive, last: [] })
+      this.drives.set(labelName, { drive, last: [], interval: null })
     }
 
     for (const [k, { name }] of coreKeys) {
@@ -25,22 +26,37 @@ class HyperHealthCheck extends ReadyResource {
       const labelName = name
         ? `${name}:${IdEnc.normalize(k)}`
         : IdEnc.normalize(k)
-      this.cores.set(labelName, { core, last: [] })
+      this.cores.set(labelName, { core, last: [], interval: null })
     }
   }
 
   async _open() {
-    for (const { drive } of this.drives.values()) {
+    for (const value of this.drives.values()) {
+      const { drive, last } = value
       await drive.ready()
       this.swarm.join(drive.discoveryKey, { server: false, client: true })
+      value.interval = setInterval(() => {
+        last.unshift({ length: drive.blobs.core.length, at: Date.now() })
+      }, this.updateInterval)
     }
-    for (const { core } of this.cores.values()) {
+    for (const value of this.cores.values()) {
+      const { core, last } = value
       await core.ready()
       this.swarm.join(core.discoveryKey, { server: false, client: true })
+      value.interval = setInterval(() => {
+        last.unshift({ length: core.length, at: Date.now() })
+      }, this.updateInterval)
     }
   }
 
-  async _close() {}
+  async _close() {
+    for (const value of this.drives.values()) {
+      clearInterval(value.interval)
+    }
+    for (const value of this.cores.values()) {
+      clearInterval(value.interval)
+    }
+  }
 
   _processMetric(extractValue) {
     const res = new Map()
@@ -57,7 +73,6 @@ class HyperHealthCheck extends ReadyResource {
     let length = core.length
     if (this.gracePeriod) {
       const now = Date.now()
-      last.unshift({ length: core.length, at: now })
       const index =
         last.findIndex((item) => now - item.at >= +this.gracePeriod) - 1
       if (index >= 0) {
