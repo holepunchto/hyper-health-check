@@ -10,7 +10,7 @@ class HyperHealthCheck extends ReadyResource {
     this.cores = new Map()
     this.store = store
     this.swarm = swarm
-    this.gracePeriod = opts.gracePeriod
+    this.gracePeriod = opts.gracePeriod || 0
 
     for (const [k, { name }] of driveKeys) {
       const drive = new Hyperdrive(this.store.session(), IdEnc.decode(k))
@@ -59,7 +59,7 @@ class HyperHealthCheck extends ReadyResource {
       const now = Date.now()
       last.unshift({ length: core.length, at: now })
       const index =
-        last.findIndex((item) => now - item.at >= this.gracePeriod) - 1
+        last.findIndex((item) => now - item.at >= +this.gracePeriod) - 1
       if (index >= 0) {
         length = last[index].length
         last.splice(index + 1) // remove from index + 1 to end
