@@ -60,7 +60,7 @@ const runCmd = command(
   ),
   flag(
     '--update-interval [updateInterval]',
-    `Interval (in ms) at which to update the lengths of the cores. Default ${DEFAULT_UPDATE_INTERVAL}`,
+    `Interval (in ms) at which to update the lengths of the cores. Default ${DEFAULT_UPDATE_INTERVAL}`
   ),
 
   async function ({ flags }) {
