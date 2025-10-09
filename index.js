@@ -40,14 +40,16 @@ class HyperHealthCheck extends ReadyResource {
       await core.ready()
       this.swarm.join(core.discoveryKey, { server: false, client: true })
     }
-    this.updateInterval = setInterval(() => {
-      for (const { drive, last } of this.drives.values()) {
-        this._updateLength(drive.blobs.core, last)
-      }
-      for (const { core, last } of this.cores.values()) {
-        this._updateLength(core, last)
-      }
-    }, this.updateIntervalPeriod)
+    if (this.gracePeriod) {
+      this.updateInterval = setInterval(() => {
+        for (const { drive, last } of this.drives.values()) {
+          this._updateLength(drive.blobs.core, last)
+        }
+        for (const { core, last } of this.cores.values()) {
+          this._updateLength(core, last)
+        }
+      }, this.updateIntervalPeriod)
+    }
   }
 
   async _close() {

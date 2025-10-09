@@ -20,6 +20,8 @@ const DEFAULT_CORESTORE_LOC = path.join(
   'hyper-health-check'
 )
 const DEFAULT_LOG_INTERVAL = 60 * 60
+const DEFAULT_GRACE_PERIOD = 10 * 60 * 1000
+const DEFAULT_UPDATE_INTERVAL = 60 * 1000
 
 const runCmd = command(
   'run',
@@ -51,6 +53,14 @@ const runCmd = command(
   flag(
     '--log-interval [logInterval]',
     `Interval (in seconds) at which to log the info. Default ${DEFAULT_LOG_INTERVAL}`
+  ),
+  flag(
+    '--grace-period [gracePeriod]',
+    `Time (in ms) after which a peer is considered unhealthy if we have not heard from them. Default ${DEFAULT_GRACE_PERIOD}`
+  ),
+  flag(
+    '--update-interval [updateInterval]',
+    `Interval (in ms) at which to update the lengths of the cores. Default ${DEFAULT_UPDATE_INTERVAL}`
   ),
 
   async function ({ flags }) {
@@ -106,7 +116,11 @@ const runCmd = command(
       driveKeys,
       coreKeys,
       store,
-      swarm
+      swarm,
+      {
+        gracePeriod: flags.gracePeriod ?? DEFAULT_GRACE_PERIOD,
+        updateIntervalPeriod: flags.updateInterval ?? DEFAULT_UPDATE_INTERVAL
+      }
     )
 
     let server = null
