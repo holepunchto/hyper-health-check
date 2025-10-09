@@ -53,7 +53,7 @@ class HyperHealthCheck extends ReadyResource {
     return res
   }
 
-  _getLength (core, last) {
+  _getLength(core, last) {
     let length = core.length
     if (this.gracePeriod) {
       const now = Date.now()
