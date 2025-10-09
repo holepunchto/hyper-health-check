@@ -17,7 +17,7 @@ class HyperHealthCheck extends ReadyResource {
       const labelName = name
         ? `${name}:${IdEnc.normalize(k)}`
         : IdEnc.normalize(k)
-      this.drives.set(labelName, { drive, checkpoints: [] })
+      this.drives.set(labelName, { drive, last: [] })
     }
 
     for (const [k, { name }] of coreKeys) {
@@ -25,7 +25,7 @@ class HyperHealthCheck extends ReadyResource {
       const labelName = name
         ? `${name}:${IdEnc.normalize(k)}`
         : IdEnc.normalize(k)
-      this.cores.set(labelName, { core, checkpoints: [] })
+      this.cores.set(labelName, { core, last: [] })
     }
   }
 
