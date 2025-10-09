@@ -83,11 +83,7 @@ class HyperHealthCheck extends ReadyResource {
       const now = Date.now()
       const index =
         last.findIndex((item) => now - item.at >= +this.gracePeriod) - 1
-      if (index >= 0) {
-        length = last[index].length
-      } else {
-        length = last[last.length - 1]
-      }
+      length = index >= 0 ? last[index].length : last[last.length - 1].length
     }
     return length
   }
