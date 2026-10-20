@@ -15,10 +15,7 @@ const Server = require('./lib/server')
 const HyperHealthCheck = require('.')
 
 // We're not stateful, so fine to live in tmp
-const DEFAULT_CORESTORE_LOC = path.join(
-  path.resolve(os.tmpdir()),
-  'hyper-health-check'
-)
+const DEFAULT_CORESTORE_LOC = path.join(path.resolve(os.tmpdir()), 'hyper-health-check')
 const DEFAULT_LOG_INTERVAL = 60 * 60
 const DEFAULT_GRACE_PERIOD = 10 * 60 * 1000
 const DEFAULT_UPDATE_INTERVAL = 60 * 1000
@@ -34,10 +31,7 @@ const runCmd = command(
     'Key of a Hypercore to monitor. Optionally include a name after the key, separated by a colon (:). Can be more than 1.'
   ).multiple(),
 
-  flag(
-    '--port|-p [port]',
-    'HTTP Port to try to bind to (defaults to a random port)'
-  ),
+  flag('--port|-p [port]', 'HTTP Port to try to bind to (defaults to a random port)'),
   flag(
     '--scraper-public-key [scraper-public-key]',
     'Public key of a dht-prometheus scraper.  Can be hex or z32.'
@@ -46,10 +40,7 @@ const runCmd = command(
     '--scraper-secret [scraper-secret]',
     'Secret of the dht-prometheus scraper.  Can be hex or z32.'
   ),
-  flag(
-    '--scraper-alias [scraper-alias]',
-    '(optional) Alias with which to register to the scraper'
-  ),
+  flag('--scraper-alias [scraper-alias]', '(optional) Alias with which to register to the scraper'),
   flag(
     '--log-interval [logInterval]',
     `Interval (in seconds) at which to log the info. Default ${DEFAULT_LOG_INTERVAL}`
@@ -71,9 +62,7 @@ const runCmd = command(
     for (const entry of flags.drive || []) {
       const nameStart = entry.indexOf(':')
       const [k, name] =
-        nameStart > 0
-          ? [entry.slice(0, nameStart), entry.slice(nameStart + 1)]
-          : [entry, null]
+        nameStart > 0 ? [entry.slice(0, nameStart), entry.slice(nameStart + 1)] : [entry, null]
       const key = IdEnc.normalize(k)
       logger.info(`Watching drive ${key} (${name || 'no name'})`)
       driveKeys.set(key, { name })
@@ -83,9 +72,7 @@ const runCmd = command(
     for (const entry of flags.core || []) {
       const nameStart = entry.indexOf(':')
       const [k, name] =
-        nameStart > 0
-          ? [entry.slice(0, nameStart), entry.slice(nameStart + 1)]
-          : [entry, null]
+        nameStart > 0 ? [entry.slice(0, nameStart), entry.slice(nameStart + 1)] : [entry, null]
       const key = IdEnc.normalize(k)
       logger.info(`Watching core ${key} (${name || 'no name'})`)
       coreKeys.set(key, { name })
@@ -100,28 +87,18 @@ const runCmd = command(
 
     swarm.on('connection', (socket, peerInfo) => {
       const peerKey = IdEnc.normalize(peerInfo.publicKey)
-      logger.info(
-        `connected to peer ${peerKey} (total: ${swarm.connections.size})`
-      )
+      logger.info(`connected to peer ${peerKey} (total: ${swarm.connections.size})`)
       store.replicate(socket)
       socket.on('error', (e) => logger.info(e)) // Usually just unexpectedly closed
       socket.on('close', () =>
-        logger.info(
-          `closed connection to ${peerKey} (total: ${swarm.connections.size})`
-        )
+        logger.info(`closed connection to ${peerKey} (total: ${swarm.connections.size})`)
       )
     })
 
-    const healthChecker = new HyperHealthCheck(
-      driveKeys,
-      coreKeys,
-      store,
-      swarm,
-      {
-        gracePeriod: flags.gracePeriod ?? DEFAULT_GRACE_PERIOD,
-        updateIntervalPeriod: flags.updateInterval ?? DEFAULT_UPDATE_INTERVAL
-      }
-    )
+    const healthChecker = new HyperHealthCheck(driveKeys, coreKeys, store, swarm, {
+      gracePeriod: flags.gracePeriod ?? DEFAULT_GRACE_PERIOD,
+      updateIntervalPeriod: flags.updateInterval ?? DEFAULT_UPDATE_INTERVAL
+    })
 
     let server = null
     if (port !== null) {
