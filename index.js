@@ -16,17 +16,13 @@ class HyperHealthCheck extends ReadyResource {
 
     for (const [k, { name }] of driveKeys) {
       const drive = new Hyperdrive(this.store.session(), IdEnc.decode(k))
-      const labelName = name
-        ? `${name}:${IdEnc.normalize(k)}`
-        : IdEnc.normalize(k)
+      const labelName = name ? `${name}:${IdEnc.normalize(k)}` : IdEnc.normalize(k)
       this.drives.set(labelName, { drive, last: [] })
     }
 
     for (const [k, { name }] of coreKeys) {
       const core = this.store.get({ key: IdEnc.decode(k) })
-      const labelName = name
-        ? `${name}:${IdEnc.normalize(k)}`
-        : IdEnc.normalize(k)
+      const labelName = name ? `${name}:${IdEnc.normalize(k)}` : IdEnc.normalize(k)
       this.cores.set(labelName, { core, last: [] })
     }
   }
@@ -79,9 +75,7 @@ class HyperHealthCheck extends ReadyResource {
     let length = core.length
     if (this.gracePeriod) {
       const now = Date.now()
-      const lastLength = last.findLast(
-        (item) => now - item.at <= this.gracePeriod
-      )?.length
+      const lastLength = last.findLast((item) => now - item.at <= this.gracePeriod)?.length
       if (lastLength) length = lastLength
     }
     return length
